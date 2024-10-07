@@ -3,10 +3,11 @@
 #include <ctime>   // for std::clock
 #include <iostream>
 
+#include <immintrin.h> // For AVX intrinsics
+
 #define SIZE 512
-// The kernel function
 template <int rows, int columns, int inners>
-inline void matmulImplNaive(const float *left, const float *right, float *result)
+inline void matmulImplAVX(const float *left, const float *right, float *result)
 {
     // Initialize the result matrix to zero
     for (int i = 0; i < rows * columns; ++i)
@@ -18,10 +19,26 @@ inline void matmulImplNaive(const float *left, const float *right, float *result
     {
         for (int col = 0; col < columns; col++)
         {
-            for (int inner = 0; inner < inners; inner++)
+            __m256 vecResult = _mm256_setzero_ps(); // Initialize a zero vector
+
+            for (int inner = 0; inner < inners; inner += 8)
             {
-                result[row * columns + col] +=
-                    left[row * inners + inner] * right[inner * columns + col];
+                // Load 8 floats from the left and right matrices
+                __m256 vecLeft = _mm256_loadu_ps(&left[row * inners + inner]);
+                __m256 vecRight = _mm256_loadu_ps(&right[inner * columns + col]);
+
+                // Multiply the vectors and accumulate the result
+                vecResult = _mm256_add_ps(vecResult, _mm256_mul_ps(vecLeft, vecRight));
+            }
+
+            // Store the result into the output matrix
+            float resultArray[8];
+            _mm256_storeu_ps(resultArray, vecResult);
+
+            // Sum the accumulated result from the AVX register
+            for (int i = 0; i < 8; ++i)
+            {
+                result[row * columns + col] += resultArray[i];
             }
         }
     }
@@ -52,7 +69,7 @@ int main()
     // Timing the matrix multiplication
     std::clock_t start = std::clock(); // Start time
 
-    matmulImplNaive<rows, columns, inners>(left, right, result);
+    matmulImplAVX<rows, columns, inners>(left, right, result);
 
     std::clock_t end = std::clock(); // End time
 
@@ -60,9 +77,9 @@ int main()
     double duration = 1000.0 * (end - start) / CLOCKS_PER_SEC; // in milliseconds
 
     std::cout << "Time elapsed: " << duration << std::endl;
-
     std::cout << "Performance: " << (2. * pow(SIZE, 3) / duration / 1000000.) << " GFlops/s"
               << std::endl;
+
     // Print the result
     /*
       std::cout << "Result matrix:\n";

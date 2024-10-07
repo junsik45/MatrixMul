@@ -3,10 +3,11 @@
 #include <ctime>   // for std::clock
 #include <iostream>
 
+#include <immintrin.h> // For AVX intrinsics
+
 #define SIZE 512
-// The kernel function
 template <int rows, int columns, int inners>
-inline void matmulImplNaive(const float *left, const float *right, float *result)
+inline void matmulOptimizedAVX(const float *left, const float *right, float *result)
 {
     // Initialize the result matrix to zero
     for (int i = 0; i < rows * columns; ++i)
@@ -14,14 +15,27 @@ inline void matmulImplNaive(const float *left, const float *right, float *result
         result[i] = 0.0f;
     }
 
-    for (int row = 0; row < rows; row++)
+    for (int inner = 0; inner < inners; inner++)
     {
-        for (int col = 0; col < columns; col++)
+        for (int row = 0; row < rows; row++)
         {
-            for (int inner = 0; inner < inners; inner++)
+            // Load a scalar from the left matrix
+            float leftVal = left[row * inners + inner];
+            __m256 vecLeft = _mm256_set1_ps(leftVal); // Broadcast leftVal across the vector
+
+            for (int col = 0; col < columns; col += 8)
             {
-                result[row * columns + col] +=
-                    left[row * inners + inner] * right[inner * columns + col];
+                // Load 8 floats from the right matrix
+                __m256 vecRight = _mm256_loadu_ps(&right[inner * columns + col]);
+
+                // Load the current result vector (8 floats)
+                __m256 vecResult = _mm256_loadu_ps(&result[row * columns + col]);
+
+                // Multiply leftVal with vecRight and accumulate into vecResult
+                vecResult = _mm256_add_ps(vecResult, _mm256_mul_ps(vecLeft, vecRight));
+
+                // Store the result back
+                _mm256_storeu_ps(&result[row * columns + col], vecResult);
             }
         }
     }
@@ -52,7 +66,7 @@ int main()
     // Timing the matrix multiplication
     std::clock_t start = std::clock(); // Start time
 
-    matmulImplNaive<rows, columns, inners>(left, right, result);
+    matmulOptimizedAVX<rows, columns, inners>(left, right, result);
 
     std::clock_t end = std::clock(); // End time
 
@@ -60,9 +74,9 @@ int main()
     double duration = 1000.0 * (end - start) / CLOCKS_PER_SEC; // in milliseconds
 
     std::cout << "Time elapsed: " << duration << std::endl;
-
     std::cout << "Performance: " << (2. * pow(SIZE, 3) / duration / 1000000.) << " GFlops/s"
               << std::endl;
+
     // Print the result
     /*
       std::cout << "Result matrix:\n";

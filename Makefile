@@ -2,7 +2,7 @@
 CXX = g++
 
 # Compiler flags
-CXXFLAGS = -Wall -Wextra -O3 -fopenmp -funroll-loops -march=native -std=c++11
+CXXFLAGS = -Wall -Wextra -O3 -mavx -fopenmp -funroll-loops -march=native -std=c++11
 
 # Automatically find all source files
 SOURCES = $(wildcard *.cc)

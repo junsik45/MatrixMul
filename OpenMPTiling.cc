@@ -2,26 +2,33 @@
 #include <cstdlib> // for std::malloc and std::free
 #include <ctime>   // for std::clock
 #include <iostream>
-
+#define ROW_COL_PARALLEL_INNER_TILING_TILE_SIZE 128
 #define SIZE 512
 // The kernel function
-template <int rows, int columns, int inners>
-inline void matmulImplNaive(const float *left, const float *right, float *result)
-{
-    // Initialize the result matrix to zero
-    for (int i = 0; i < rows * columns; ++i)
-    {
-        result[i] = 0.0f;
-    }
 
-    for (int row = 0; row < rows; row++)
+template <int rows, int columns, int inners, int tileSize = ROW_COL_PARALLEL_INNER_TILING_TILE_SIZE>
+inline void matmulImplRowColParallelInnerTiling(const float *left, const float *right,
+                                                float *result)
+{
+#pragma omp parallel for shared(result, left, right) default(none) collapse(3) num_threads(4)
+    for (int rowTile = 0; rowTile < rows; rowTile += tileSize)
     {
-        for (int col = 0; col < columns; col++)
+        for (int columnTile = 0; columnTile < columns; columnTile += tileSize)
         {
-            for (int inner = 0; inner < inners; inner++)
+            for (int innerTile = 0; innerTile < inners; innerTile += tileSize)
             {
-                result[row * columns + col] +=
-                    left[row * inners + inner] * right[inner * columns + col];
+                for (int row = rowTile; row < rowTile + tileSize; row++)
+                {
+                    int innerTileEnd = std::min(inners, innerTile + tileSize);
+                    for (int inner = innerTile; inner < innerTileEnd; inner++)
+                    {
+                        for (int col = columnTile; col < columnTile + tileSize; col++)
+                        {
+                            result[row * columns + col] +=
+                                left[row * inners + inner] * right[inner * columns + col];
+                        }
+                    }
+                }
             }
         }
     }
@@ -52,7 +59,7 @@ int main()
     // Timing the matrix multiplication
     std::clock_t start = std::clock(); // Start time
 
-    matmulImplNaive<rows, columns, inners>(left, right, result);
+    matmulImplRowColParallelInnerTiling<rows, columns, inners>(left, right, result);
 
     std::clock_t end = std::clock(); // End time
 
@@ -60,9 +67,9 @@ int main()
     double duration = 1000.0 * (end - start) / CLOCKS_PER_SEC; // in milliseconds
 
     std::cout << "Time elapsed: " << duration << std::endl;
-
     std::cout << "Performance: " << (2. * pow(SIZE, 3) / duration / 1000000.) << " GFlops/s"
               << std::endl;
+
     // Print the result
     /*
       std::cout << "Result matrix:\n";

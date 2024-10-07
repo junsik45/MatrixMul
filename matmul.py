@@ -11,4 +11,4 @@ z = np.dot(x, y)
 end = time.time_ns() - start
 
 print(end / 1000000, " ms")
-print(2 * 1024 ** 3 / end, " GFlops/s")
+print(2 * (size **3.) / end , " GFlops/s")
