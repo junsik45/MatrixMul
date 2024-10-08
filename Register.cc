@@ -42,12 +42,12 @@ int main()
     // Initialize the left and right matrices with some values
     for (int i = 0; i < rows * inners; ++i)
     {
-        left[i] = static_cast<float>(std::rand() % 10); // Random values [0, 10)
+        left[i] = static_cast<float>(10.0 * std::rand() / RAND_MAX); // Random values [0, 10)
     }
 
     for (int i = 0; i < inners * columns; ++i)
     {
-        right[i] = static_cast<float>(std::rand() % 10); // Random values [0, 10)
+        right[i] = static_cast<float>(10.0 * std::rand() / RAND_MAX); // Random values [0, 10)
     }
 
     // Timing the matrix multiplication
