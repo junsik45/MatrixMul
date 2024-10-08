@@ -100,8 +100,9 @@ This project is licensed under the MIT License.
 
 ### Resources
 - [Introduction to the problem of Matrix Multiplication](https://marek.ai/matrix-multiplication-on-cpu.html)
-- [Introduction to the problem of Matrix Multiplication](https://siboehm.com/articles/22/Fast-MMM-on-CPU)
-- [Introduction to AVX/SIMD Instructions](https://blog.qiqitori.com/2018/04/baby-steps-in-simd-sseavx)(https://blog.qiqitori.com/2018/05/matrix-multiplication-using-simd-instructions/)
+- [Introduction to the problem of Matrix Multiplication (Si Boehm)](https://siboehm.com/articles/22/Fast-MMM-on-CPU)
+- [Introduction to AVX/SIMD Instructions](https://blog.qiqitori.com/2018/04/baby-steps-in-simd-sseavx)
+- [Qiqitori's blog on Matrix Multiplication](https://blog.qiqitori.com/2018/05/matrix-multiplication-using-simd-instructions/)
 - [Intel VTune Profiler](https://software.intel.com/content/www/us/en/develop/tools/vtune.html)
 - [Roofline Model Explanation](https://docs.nersc.gov/tools/performance/roofline/)
-
+- [Benchmark Result on 11th Gen i3 @ 3.00GHz with 2 physical cores](./roofline.pdf)

@@ -45,6 +45,13 @@ int main()
     float *right = (float *)std::malloc(inners * columns * sizeof(float));
     float *result = (float *)std::malloc(rows * columns * sizeof(float));
 
+    // Check for allocation success
+    if (left == nullptr || right == nullptr || result == nullptr)
+    {
+        std::cerr << "Memory allocation failed!" << std::endl;
+        return 1;
+    }
+
     // Initialize the left and right matrices with some values
     for (int i = 0; i < rows * inners; ++i)
     {

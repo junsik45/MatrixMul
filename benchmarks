@@ -1,9 +1,0 @@
-AVX 14.1744
-AVXLoop 21.3383
-AVXLoopOpenMPTiling 41.6114
-AVXLoopTiling 24.3877
-LoopReorder 21.856
-Naiive 12.6305
-OpenMP 1.65373
-OpenMPTiling 13.9433
-Register 12.842
