@@ -88,6 +88,10 @@ for (int row = 0; row < rows; ++row) {
 
 This code uses OpenMP for parallelizing the loops and performs a matrix multiplication operation.
 
+## Benchmark Result on 11th Gen i3 @ 3.00GHz with 2 physical cores
+
+![roofline analysis](./roofline.png)
+
 ## Contributions
 
 Feel free to contribute by opening issues or submitting pull requests.
@@ -105,4 +109,3 @@ This project is licensed under the MIT License.
 - [Qiqitori's blog on Matrix Multiplication](https://blog.qiqitori.com/2018/05/matrix-multiplication-using-simd-instructions/)
 - [Intel VTune Profiler](https://software.intel.com/content/www/us/en/develop/tools/vtune.html)
 - [Roofline Model Explanation](https://docs.nersc.gov/tools/performance/roofline/)
-- [Benchmark Result on 11th Gen i3 @ 3.00GHz with 2 physical cores](./roofline.pdf)
