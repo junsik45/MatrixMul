@@ -1,0 +1,16 @@
+#Simon's analysis is about A6000, and my device is A100.
+## A new analysis is needed.
+
+Shared memory: 8192B/Block + 1024B/Block for CUDA runtime usage = 9216B/Block.
+(102400B per SM) / (9216B per Block) = 11.11 ⇒ 11 Blocks upper limit.
+Threads: 1024 Threads per Block, max 1536 threads per SM ⇒ Upper limit 1 block.
+
+
+Registers: 37 regs per thread * 32 threads per warp = 1184 regs per warp. 
+Register allocation granularity is 256 regs on a warp level, hence rounding up to 1280 regs per warp. 
+We have (1024 threads / 32) = 32 warps per block, hence 1280 regs per warp * 32 warps per block = 40960 regs per block. 
+Max 65536 regs per SM ⇒ upper limit 1 block
+
+
+Registers: 30 regs per thread * 32 threads per warp = 960 regs per warp.
+Register allocation granularity is 

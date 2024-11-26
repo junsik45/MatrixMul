@@ -1,11 +1,11 @@
-#include <stdio.h>
+#include <iostream>
 
 
 #ifndef CUDACC
 #define CUDACC
 #endif
 #include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <cuda_runtime.h>
 // Write CUDA kernel for naiive matrix multiplication
 template <const uint BLOCKSIZE>
 __global__ void sgemm_SMEMblocking(int M, int N, int K, float alpha, const float *A, 
@@ -91,39 +91,55 @@ int main(void) {
   // Calculate elapsed time
   float milliseconds = 0;
   cudaEventElapsedTime(&milliseconds, start, stop);
-  printf("Elapsed time: %f ms\n", milliseconds);
+  std::cout << "Elapsed time: " << milliseconds << " ms" << std::endl;
 
   int nDevices;
   cudaGetDeviceCount(&nDevices);
   
-  printf("Number of devices: %d\n", nDevices);
+  std::cout << "Number of devices: " << nDevices << std::endl;
   
   for (int i = 0; i < nDevices; i++) {
     cudaDeviceProp prop;
     cudaGetDeviceProperties(&prop, i);
-    printf("Device Number: %d\n", i);
-    printf("  Device name: %s\n", prop.name);
-    printf("  maxThreadsPerBlock: %d\n", prop.maxThreadsPerBlock);
-    printf("  maxThreadsPerMultiProcessor: %d\n", prop.maxThreadsPerMultiProcessor);
-    printf("  maxRegsPerBlock: %d\n", prop.regsPerBlock);
-    printf("  maxRegsPerMultiprocessor: %d\n", prop.regsPerMultiprocessor);
-    printf("  MultiProcessor Count: %d\n", prop.multiProcessorCount);
+    std::cout << "Device Number: " << i << "\n";
+    std::cout << "  Device name: " << prop.name << "\n";
+    std::cout << "  maxThreadsPerBlock: " << prop.maxThreadsPerBlock << "\n";
+    std::cout << "  maxThreadsPerMultiProcessor: " << prop.maxThreadsPerMultiProcessor << "\n";
+    std::cout << "  maxRegsPerBlock: " << prop.regsPerBlock << "\n";
+    std::cout << "  maxRegsPerMultiprocessor: " << prop.regsPerMultiprocessor << "\n";
+    std::cout << "  MultiProcessor Count: " << prop.multiProcessorCount << "\n";
 
-    printf("  Memory Clock Rate (MHz): %d\n",
-           prop.memoryClockRate/1024);
-    printf("  Memory Bus Width (bits): %d\n",
-           prop.memoryBusWidth);
-    printf("  Peak Memory Bandwidth (GB/s): %.1f\n",
-           2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6);
-    printf("  Total global memory (Gbytes) %.1f\n",(float)(prop.totalGlobalMem)/1024.0/1024.0/1024.0);
-    printf("  Shared memory per block (Kbytes) %.1f\n",(float)(prop.sharedMemPerBlock)/1024.0);
-    printf("  total const memory(Kbytes) %.1f\n",(float)(prop.totalConstMem)/1024.0);
-    printf("  memoryBusWidth-Compute Capability: %d-%d\n", prop.minor, prop.major);
-    printf("  Warp-size: %d\n", prop.warpSize);
-    printf("  Concurrent kernels: %s\n", prop.concurrentKernels ? "yes" : "no");
-    printf("  Concurrent computation/communication: %s\n\n",prop.deviceOverlap ? "yes" : "no");
-
+    std::cout << "  Memory Clock Rate (MHz): " << prop.memoryClockRate / 1024 << "\n";
+    std::cout << "  Memory Bus Width (bits): " << prop.memoryBusWidth << "\n";
+    std::cout << "  Peak Memory Bandwidth (GB/s): " 
+              << 2.0 * prop.memoryClockRate * (prop.memoryBusWidth / 8) / 1.0e6 << "\n";
+    std::cout << "  Total global memory (Gbytes): " 
+              << static_cast<float>(prop.totalGlobalMem) / 1024.0 / 1024.0 / 1024.0 << "\n";
+    std::cout << "  Shared memory per block (Kbytes): " 
+              << static_cast<float>(prop.sharedMemPerBlock) / 1024.0 << "\n";
+    std::cout << "  Total constant memory (Kbytes): " 
+              << static_cast<float>(prop.totalConstMem) / 1024.0 << "\n";
+    std::cout << "  Compute Capability: " << prop.major << "-" << prop.minor << "\n";
+    std::cout << "  Warp-size: " << prop.warpSize << "\n";
+    std::cout << "  Concurrent kernels: " << (prop.concurrentKernels ? "yes" : "no") << "\n";
+    std::cout << "  Concurrent computation/communication: " 
+              << (prop.deviceOverlap ? "yes" : "no") << "\n\n";
   }
+    // Get function attributes for myKernel
+    cudaFuncAttributes funcAttr;
+    cudaError_t err = cudaFuncGetAttributes(&funcAttr, sgemm_SMEMblocking<32>);
+    if (err != cudaSuccess) {
+        std::cerr << "Error: " << cudaGetErrorString(err) << std::endl;
+        return -1;
+    }
+    std::cout << "Registers per thread: " << funcAttr.numRegs << std::endl;
+    std::cout << "Shared memory per block (bytes): " << funcAttr.sharedSizeBytes << std::endl;
+    std::cout << "Constant memory per block (bytes): " << funcAttr.constSizeBytes << std::endl;
+    std::cout << "Local memory per thread (bytes): " << funcAttr.localSizeBytes << std::endl;
+    std::cout << "Max threads per block: " << funcAttr.maxThreadsPerBlock << std::endl;
+    std::cout << "Binary version: " << funcAttr.binaryVersion << std::endl;
+    std::cout << "Cache mode CA: " << funcAttr.cacheModeCA << std::endl;
+    std::cout << "Preferred shared memory carve-out: " << funcAttr.preferredShmemCarveout << std::endl;
   // Clean up
   cudaEventDestroy(start);
   cudaEventDestroy(stop);

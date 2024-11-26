@@ -1,11 +1,17 @@
 #include <stdio.h>
 
 
-// Write CUDA kernel for naiive matrix multiplication
+// Write CUDA kernel for GMEM coalescing matrix multiplication
+// Contiguous memory access within a warp can be coalesced up to
+// float -> 128 B and double -> 256 B
+// 1 warp contains 32 threads thus 128 B = 32 * 4B
+
 template <const uint BLOCKSIZE>
 __global__ void sgemm_GMEMcoalescing(int M, int N, int K, float alpha, const float *A, 
                             const float *B, float beta, float *C) {
-
+    // indexing this way, consecutive thread can access consecutive memory space
+    // increasing threadIdx -> fastest y for columns of B
+    // slower x for rows of A
     const uint x = blockIdx.x * BLOCKSIZE + (threadIdx.x / BLOCKSIZE);
     const uint y = blockIdx.y * BLOCKSIZE + (threadIdx.x % BLOCKSIZE);
 
