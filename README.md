@@ -1,6 +1,7 @@
 # Matrix Multiplication Optimization
 
 This project implements matrix multiplication using various optimization techniques including **tiling**, **vectorization** (with AVX instructions), and **parallelization** (via OpenMP). The goal is to maximize performance by utilizing modern CPU features and memory hierarchies.
+Now it is added to have GPU codes. The goal is to optimize the matrix multiplication to maximize performance by utilizing GPU features in CUDA.
 
 ## Overview
 
@@ -28,7 +29,8 @@ Matrix multiplication is a fundamental operation in many scientific computing an
   - **Tiling** to improve cache utilization.
   - **AVX vectorization** for faster floating-point operations.
   - **OpenMP parallelization** to utilize multiple CPU cores.
-  
+- **CUDA kernel**:
+  - **Tiling, GMEM coalescing, SMEM blocking, block tiling** are utilized to maximize the performance in CUDA kernels.
 ## Installation
 
 To build and run the project, you'll need a C++ compiler that supports OpenMP and AVX instructions, such as `g++` or `clang++`. You can compile the code with the following command:
@@ -37,6 +39,7 @@ To build and run the project, you'll need a C++ compiler that supports OpenMP an
 make
 ```
 Note that the size of the matrix is fixed at compilation. To change the size of the matrix, you should refer to the commented out lines in 'benchmark.sh'
+For GPU codes, you need NVIDIA CudaToolkits. I used A100 GPUs and cudatoolkit 12.2. Current benchmark shows 9.225 TFlops and it's quite close to cuBLAS result which is 11.505 TFlops. Theoretical Maximum should be 19.5 TFlops which is the float32 nominal performance from NVIDIA catalogue. 
 
 ## Usage
 
@@ -66,7 +69,7 @@ Here are some performance metrics on an Intel Core i3 CPU:
 - [x] Add AVX vectorization.
 - [x] Introduce tiling to improve cache usage.
 - [x] Add OpenMP for parallel processing.
-- [ ] Extend to support GPU acceleration via CUDA.
+- [x] Extend to support GPU acceleration via CUDA.
 - [x] Integrate roofline performance analysis.
 
 ## How Matrix Multiplication Works
