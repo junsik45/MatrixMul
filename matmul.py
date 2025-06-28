@@ -2,7 +2,7 @@ import numpy as np
 import time
 
 
-size=2048
+size=512
 np.show_config()
 x = np.random.randn(size, size).astype(np.float32)
 y = np.random.randn(size, size).astype(np.float32)

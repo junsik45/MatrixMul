@@ -9,55 +9,96 @@
 #endif
 #define ROW_COL_PARALLEL_INNER_TILING_TILE_SIZE 32
 // The kernel function
-
-template <int rows, int columns, int inners, int tileSize = ROW_COL_PARALLEL_INNER_TILING_TILE_SIZE>
-inline void matmulImplAVXRowColParallelInnerTiling(const float *left, const float *right,
-                                                   float *result)
+inline void pack_B_tile(const float* B, float* B_packed, int k, int n, int ldb)
 {
-    // Initialize the result matrix to zero
-#pragma omp parallel for
-    for (int i = 0; i < rows * columns; ++i)
+    for (int col = 0; col < n; ++col)
     {
-        result[i] = 0.0f;
+        for (int row = 0; row < k; ++row)
+        {
+            B_packed[col * k + row] = B[row * ldb + col];
+        }
+    }
+}
+
+inline void microkernel_4x8(const float* left, const float* right, float* result,
+                            int lda, int ldb, int ldc, int k)
+{
+    __m256 c0 = _mm256_load_ps(&result[0 * ldc]); // Row 0
+    __m256 c1 = _mm256_load_ps(&result[1 * ldc]); // Row 1
+    __m256 c2 = _mm256_load_ps(&result[2 * ldc]); // Row 2
+    __m256 c3 = _mm256_load_ps(&result[3 * ldc]); // Row 3
+
+    for (int p = 0; p < k; ++p)
+    {
+
+
+        __m256 b = _mm256_load_ps(&right[p * ldb]); // 8 floats from B
+
+        __m256 a0 = _mm256_set1_ps(left[0 * lda + p]);
+        __m256 a1 = _mm256_set1_ps(left[1 * lda + p]);
+        __m256 a2 = _mm256_set1_ps(left[2 * lda + p]);
+        __m256 a3 = _mm256_set1_ps(left[3 * lda + p]);
+
+        c0 = _mm256_fmadd_ps(a0, b, c0);
+        c1 = _mm256_fmadd_ps(a1, b, c1);
+        c2 = _mm256_fmadd_ps(a2, b, c2);
+        c3 = _mm256_fmadd_ps(a3, b, c3);
     }
 
-#pragma omp parallel for shared(result, left, right) default(none) collapse(3) schedule(static)
+    _mm256_store_ps(&result[0 * ldc], c0);
+    _mm256_store_ps(&result[1 * ldc], c1);
+    _mm256_store_ps(&result[2 * ldc], c2);
+    _mm256_store_ps(&result[3 * ldc], c3);
+}
+
+
+template <int rows, int columns, int inners, int tileSize = ROW_COL_PARALLEL_INNER_TILING_TILE_SIZE>
+inline void matmulImplAVXRowColParallelInnerTiling(const float *left, const float *right, float *result)
+{
+#pragma omp parallel for
+    for (int i = 0; i < rows * columns; ++i)
+        result[i] = 0.0f;
+
+#pragma omp parallel for collapse(3) schedule(static)
     for (int rowTile = 0; rowTile < rows; rowTile += tileSize)
     {
         for (int innerTile = 0; innerTile < inners; innerTile += tileSize)
         {
             for (int columnTile = 0; columnTile < columns; columnTile += tileSize)
             {
+                int innerTileEnd = std::min(inners, innerTile + tileSize);
                 int rowTileEnd = std::min(rows, rowTile + tileSize);
-                for (int row = rowTile; row < rowTileEnd; row++)
-                {
-                    int innerTileEnd = std::min(inners, innerTile + tileSize);
-                    for (int inner = innerTile; inner < innerTileEnd; inner++)
-                    {
-                        // Load a scalar from the left matrix
-                        float leftVal = left[row * inners + inner];
-                        __m256 vecLeft =
-                            _mm256_set1_ps(leftVal); // Broadcast leftVal across the vector
+                int columnTileEnd = std::min(columns, columnTile + tileSize);
 
-                        int columnTileEnd = std::min(columns, columnTile + tileSize);
-for (int col = columnTile; col < columnTileEnd; col += 16) {
-    __m256 r0 = _mm256_load_ps(&right[inner * columns + col]);
-    __m256 r1 = _mm256_load_ps(&right[inner * columns + col + 8]);
-    __m256 res0 = _mm256_load_ps(&result[row * columns + col]);
-    __m256 res1 = _mm256_load_ps(&result[row * columns + col + 8]);
-    res0 = _mm256_fmadd_ps(vecLeft, r0, res0);
-    res1 = _mm256_fmadd_ps(vecLeft, r1, res1);
-    _mm256_store_ps(&result[row * columns + col], res0);
-    _mm256_store_ps(&result[row * columns + col + 8], res1);
-}
+                // Compute packed dimensions
+                int packed_k = innerTileEnd - innerTile;
+                int packed_n = columnTileEnd - columnTile;
+
+                // Allocate temporary buffer for packed B
+                float* B_packed = static_cast<float*>(aligned_alloc(32, packed_k * packed_n * sizeof(float)));
+                //std::vector<float> B_packed(packed_k * packed_n); // Safe for OpenMP
+                if (!B_packed) { std::cerr << "Allocation failed!\n"; exit(1); }
+
+                // Pack the B tile (innerTile × columnTile)
+                pack_B_tile(&right[innerTile * columns + columnTile], B_packed, packed_k, packed_n, columns);
+
+                for (int row = rowTile; row + 3 < rowTileEnd; row += 4)
+                {
+                    for (int col = columnTile; col + 7 < columnTileEnd; col += 8)
+                    {
+                        microkernel_4x8(
+                            &left[row * inners + innerTile],    // 4xK block from A
+                            &B_packed[(col - columnTile) * packed_k], // 8xK block from packed B
+                            &result[row * columns + col],
+                            inners, packed_k, columns, packed_k);
                     }
                 }
+                // After use
+                free(B_packed);
             }
         }
     }
 }
-
-
 
 
 int main()

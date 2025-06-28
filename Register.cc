@@ -3,7 +3,9 @@
 #include <ctime>   // for std::clock
 #include <iostream>
 
+#ifndef SIZE
 #define SIZE 512
+#endif
 template <int rows, int columns, int inners>
 inline void matmulImplNaiveRegisterAcc(const float *left, const float *right, float *result)
 {
@@ -54,11 +56,20 @@ int main()
     std::clock_t start = std::clock(); // Start time
 
     matmulImplNaiveRegisterAcc<rows, columns, inners>(left, right, result);
+    matmulImplNaiveRegisterAcc<rows, columns, inners>(left, right, result);
+    matmulImplNaiveRegisterAcc<rows, columns, inners>(left, right, result);
+    matmulImplNaiveRegisterAcc<rows, columns, inners>(left, right, result);
+    matmulImplNaiveRegisterAcc<rows, columns, inners>(left, right, result);
+    matmulImplNaiveRegisterAcc<rows, columns, inners>(left, right, result);
+    matmulImplNaiveRegisterAcc<rows, columns, inners>(left, right, result);
+    matmulImplNaiveRegisterAcc<rows, columns, inners>(left, right, result);
+    matmulImplNaiveRegisterAcc<rows, columns, inners>(left, right, result);
+    matmulImplNaiveRegisterAcc<rows, columns, inners>(left, right, result);
 
     std::clock_t end = std::clock(); // End time
 
     // Calculate the duration
-    double duration = 1000.0 * (end - start) / CLOCKS_PER_SEC; // in milliseconds
+    double duration = 1000.0 * (end - start) / CLOCKS_PER_SEC / 10.0; // in milliseconds
 
     std::cout << "Time elapsed: " << duration << std::endl;
     std::cout << "Performance: " << (2. * pow(SIZE, 3) / duration / 1000000.) << " GFlops/s"

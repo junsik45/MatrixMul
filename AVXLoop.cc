@@ -5,19 +5,21 @@
 
 #include <immintrin.h> // For AVX intrinsics
 
+#ifndef SIZE
 #define SIZE 512
+#endif
 template <int rows, int columns, int inners>
 inline void matmulOptimizedAVX(const float *left, const float *right, float *result)
 {
-    // Initialize the result matrix to zero
-    for (int i = 0; i < rows * columns; ++i)
+    // Zero out result matrix using aligned store
+    for (int i = 0; i < rows * columns; i += 8)
     {
-        result[i] = 0.0f;
+        _mm256_store_ps(&result[i], _mm256_setzero_ps());
     }
 
-    for (int inner = 0; inner < inners; inner++)
+    for (int row = 0; row < rows; row++)
     {
-        for (int row = 0; row < rows; row++)
+        for (int inner = 0; inner < inners; inner++)
         {
             // Load a scalar from the left matrix
             float leftVal = left[row * inners + inner];
@@ -26,16 +28,16 @@ inline void matmulOptimizedAVX(const float *left, const float *right, float *res
             for (int col = 0; col < columns; col += 8)
             {
                 // Load 8 floats from the right matrix
-                __m256 vecRight = _mm256_loadu_ps(&right[inner * columns + col]);
+                __m256 vecRight = _mm256_load_ps(&right[inner * columns + col]);
 
                 // Load the current result vector (8 floats)
-                __m256 vecResult = _mm256_loadu_ps(&result[row * columns + col]);
+                __m256 vecResult = _mm256_load_ps(&result[row * columns + col]);
 
                 // Multiply leftVal with vecRight and accumulate into vecResult
-                vecResult = _mm256_add_ps(vecResult, _mm256_mul_ps(vecLeft, vecRight));
+                vecResult = _mm256_fmadd_ps(vecLeft, vecRight, vecResult);
 
                 // Store the result back
-                _mm256_storeu_ps(&result[row * columns + col], vecResult);
+                _mm256_store_ps(&result[row * columns + col], vecResult);
             }
         }
     }
@@ -48,9 +50,12 @@ int main()
     const int inners = SIZE;  // Set the inner dimension
 
     // Allocate memory for matrices
-    float *left = (float *)std::malloc(rows * inners * sizeof(float));
-    float *right = (float *)std::malloc(inners * columns * sizeof(float));
-    float *result = (float *)std::malloc(rows * columns * sizeof(float));
+    //float *left = (float *)std::malloc(rows * inners * sizeof(float));
+    //float *right = (float *)std::malloc(inners * columns * sizeof(float));
+    //float *result = (float *)std::malloc(rows * columns * sizeof(float));
+    float* left   = static_cast<float*>(aligned_alloc(32, SIZE * SIZE * sizeof(float)));
+    float* right  = static_cast<float*>(aligned_alloc(32, SIZE * SIZE * sizeof(float)));
+    float* result = static_cast<float*>(aligned_alloc(32, SIZE * SIZE * sizeof(float)));
 
     // Check for allocation success
     if (left == nullptr || right == nullptr || result == nullptr)
@@ -74,11 +79,20 @@ int main()
     std::clock_t start = std::clock(); // Start time
 
     matmulOptimizedAVX<rows, columns, inners>(left, right, result);
+    matmulOptimizedAVX<rows, columns, inners>(left, right, result);
+    matmulOptimizedAVX<rows, columns, inners>(left, right, result);
+    matmulOptimizedAVX<rows, columns, inners>(left, right, result);
+    matmulOptimizedAVX<rows, columns, inners>(left, right, result);
+    matmulOptimizedAVX<rows, columns, inners>(left, right, result);
+    matmulOptimizedAVX<rows, columns, inners>(left, right, result);
+    matmulOptimizedAVX<rows, columns, inners>(left, right, result);
+    matmulOptimizedAVX<rows, columns, inners>(left, right, result);
+    matmulOptimizedAVX<rows, columns, inners>(left, right, result);
 
     std::clock_t end = std::clock(); // End time
 
     // Calculate the duration
-    double duration = 1000.0 * (end - start) / CLOCKS_PER_SEC; // in milliseconds
+    double duration = 1000.0 * (end - start) / CLOCKS_PER_SEC /10.0; // in milliseconds
 
     std::cout << "Time elapsed: " << duration << std::endl;
     std::cout << "Performance: " << (2. * pow(SIZE, 3) / duration / 1000000.) << " GFlops/s"

@@ -3,7 +3,9 @@
 #include <ctime>   // for std::clock
 #include <iostream>
 
+#ifndef SIZE
 #define SIZE 512
+#endif
 // The kernel function
 template <int rows, int columns, int inners>
 inline void matmulImplNaive(const float *left, const float *right, float *result)
@@ -60,11 +62,20 @@ int main()
     std::clock_t start = std::clock(); // Start time
 
     matmulImplNaive<rows, columns, inners>(left, right, result);
+    matmulImplNaive<rows, columns, inners>(left, right, result);
+    matmulImplNaive<rows, columns, inners>(left, right, result);
+    matmulImplNaive<rows, columns, inners>(left, right, result);
+    matmulImplNaive<rows, columns, inners>(left, right, result);
+    matmulImplNaive<rows, columns, inners>(left, right, result);
+    matmulImplNaive<rows, columns, inners>(left, right, result);
+    matmulImplNaive<rows, columns, inners>(left, right, result);
+    matmulImplNaive<rows, columns, inners>(left, right, result);
+    matmulImplNaive<rows, columns, inners>(left, right, result);
 
     std::clock_t end = std::clock(); // End time
 
     // Calculate the duration
-    double duration = 1000.0 * (end - start) / CLOCKS_PER_SEC; // in milliseconds
+    double duration = 1000.0 * (end - start) / CLOCKS_PER_SEC / 10.0; // in milliseconds
 
     std::cout << "Time elapsed: " << duration << std::endl;
 

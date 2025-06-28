@@ -2,15 +2,17 @@
 #include <cstdlib> // for std::malloc and std::free
 #include <ctime>   // for std::clock
 #include <iostream>
-#define ROW_COL_PARALLEL_INNER_TILING_TILE_SIZE 128
+#define ROW_COL_PARALLEL_INNER_TILING_TILE_SIZE 32
+#ifndef SIZE
 #define SIZE 512
+#endif
 // The kernel function
 
 template <int rows, int columns, int inners, int tileSize = ROW_COL_PARALLEL_INNER_TILING_TILE_SIZE>
 inline void matmulImplRowColParallelInnerTiling(const float *left, const float *right,
                                                 float *result)
 {
-#pragma omp parallel for shared(result, left, right) default(none) collapse(3) num_threads(4)
+#pragma omp parallel for collapse(2) schedule(dynamic)
     for (int rowTile = 0; rowTile < rows; rowTile += tileSize)
     {
         for (int columnTile = 0; columnTile < columns; columnTile += tileSize)
@@ -19,14 +21,13 @@ inline void matmulImplRowColParallelInnerTiling(const float *left, const float *
             {
                 for (int row = rowTile; row < rowTile + tileSize; row++)
                 {
+                    int columnTileEnd = std::min(columns, columnTile + tileSize);
                     int innerTileEnd = std::min(inners, innerTile + tileSize);
-                    for (int inner = innerTile; inner < innerTileEnd; inner++)
-                    {
-                        for (int col = columnTile; col < columnTile + tileSize; col++)
-                        {
-                            result[row * columns + col] +=
-                                left[row * inners + inner] * right[inner * columns + col];
-                        }
+                    for (int col = columnTile; col < columnTileEnd; col++) {
+                        for (int inner = innerTile; inner < innerTileEnd; inner++) {
+                                result[row * columns + col] +=
+                                    left[row * inners + inner] * right[inner * columns + col];
+                            }   
                     }
                 }
             }
@@ -67,11 +68,20 @@ int main()
     std::clock_t start = std::clock(); // Start time
 
     matmulImplRowColParallelInnerTiling<rows, columns, inners>(left, right, result);
+    matmulImplRowColParallelInnerTiling<rows, columns, inners>(left, right, result);
+    matmulImplRowColParallelInnerTiling<rows, columns, inners>(left, right, result);
+    matmulImplRowColParallelInnerTiling<rows, columns, inners>(left, right, result);
+    matmulImplRowColParallelInnerTiling<rows, columns, inners>(left, right, result);
+    matmulImplRowColParallelInnerTiling<rows, columns, inners>(left, right, result);
+    matmulImplRowColParallelInnerTiling<rows, columns, inners>(left, right, result);
+    matmulImplRowColParallelInnerTiling<rows, columns, inners>(left, right, result);
+    matmulImplRowColParallelInnerTiling<rows, columns, inners>(left, right, result);
+    matmulImplRowColParallelInnerTiling<rows, columns, inners>(left, right, result);
 
     std::clock_t end = std::clock(); // End time
 
     // Calculate the duration
-    double duration = 1000.0 * (end - start) / CLOCKS_PER_SEC; // in milliseconds
+    double duration = 1000.0 * (end - start) / CLOCKS_PER_SEC / 10.0; // in milliseconds
 
     std::cout << "Time elapsed: " << duration << std::endl;
     std::cout << "Performance: " << (2. * pow(SIZE, 3) / duration / 1000000.) << " GFlops/s"

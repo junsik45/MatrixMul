@@ -3,7 +3,9 @@
 #include <ctime>   // for std::clock
 #include <iostream>
 
+#ifndef SIZE
 #define SIZE 512
+#endif
 template <int rows, int columns, int inners>
 inline void matmulImplLoopOrder(const float *left, const float *right, float *result)
 {
@@ -12,17 +14,11 @@ inline void matmulImplLoopOrder(const float *left, const float *right, float *re
     {
         result[i] = 0.0f;
     }
-    for (int row = 0; row < rows; row++)
-    {
-        for (int inner = 0; inner < inners; inner++)
-        {
-            for (int col = 0; col < columns; col++)
-            {
-                result[row * columns + col] +=
-                    left[row * columns + inner] * right[inner * columns + col];
-            }
-        }
-    }
+    for (int row = 0; row < rows; ++row)
+      for (int col = 0; col < columns; ++col)
+        for (int inner = 0; inner < inners; ++inner)
+          result[row * columns + col] += left[row * inners + inner] * right[inner * columns + col];
+
 }
 
 int main()
@@ -58,11 +54,20 @@ int main()
     std::clock_t start = std::clock(); // Start time
 
     matmulImplLoopOrder<rows, columns, inners>(left, right, result);
+    matmulImplLoopOrder<rows, columns, inners>(left, right, result);
+    matmulImplLoopOrder<rows, columns, inners>(left, right, result);
+    matmulImplLoopOrder<rows, columns, inners>(left, right, result);
+    matmulImplLoopOrder<rows, columns, inners>(left, right, result);
+    matmulImplLoopOrder<rows, columns, inners>(left, right, result);
+    matmulImplLoopOrder<rows, columns, inners>(left, right, result);
+    matmulImplLoopOrder<rows, columns, inners>(left, right, result);
+    matmulImplLoopOrder<rows, columns, inners>(left, right, result);
+    matmulImplLoopOrder<rows, columns, inners>(left, right, result);
 
     std::clock_t end = std::clock(); // End time
 
     // Calculate the duration
-    double duration = 1000.0 * (end - start) / CLOCKS_PER_SEC; // in milliseconds
+    double duration = 1000.0 * (end - start) / CLOCKS_PER_SEC / 10.0; // in milliseconds
 
     std::cout << "Time elapsed: " << duration << std::endl;
     std::cout << "Performance: " << (2. * pow(SIZE, 3) / duration / 1000000.) << " GFlops/s"

@@ -5,7 +5,9 @@
 
 #include <immintrin.h> // For AVX intrinsics
 
+#ifndef SIZE
 #define SIZE 512
+#endif
 template <int rows, int columns, int inners>
 inline void matmulImplAVX(const float *left, const float *right, float *result)
 {
@@ -24,16 +26,16 @@ inline void matmulImplAVX(const float *left, const float *right, float *result)
             for (int inner = 0; inner < inners; inner += 8)
             {
                 // Load 8 floats from the left and right matrices
-                __m256 vecLeft = _mm256_loadu_ps(&left[row * inners + inner]);
-                __m256 vecRight = _mm256_loadu_ps(&right[inner * columns + col]);
+                __m256 vecLeft = _mm256_load_ps(&left[row * inners + inner]);
+                __m256 vecRight = _mm256_load_ps(&right[inner * columns + col]);
 
                 // Multiply the vectors and accumulate the result
                 vecResult = _mm256_add_ps(vecResult, _mm256_mul_ps(vecLeft, vecRight));
             }
 
             // Store the result into the output matrix
-            float resultArray[8];
-            _mm256_storeu_ps(resultArray, vecResult);
+            alignas(32) float resultArray[8];
+            _mm256_store_ps(resultArray, vecResult);
 
             // Sum the accumulated result from the AVX register
             for (int i = 0; i < 8; ++i)
@@ -51,9 +53,9 @@ int main()
     const int inners = SIZE;  // Set the inner dimension
 
     // Allocate memory for matrices
-    float *left = (float *)std::malloc(rows * inners * sizeof(float));
-    float *right = (float *)std::malloc(inners * columns * sizeof(float));
-    float *result = (float *)std::malloc(rows * columns * sizeof(float));
+    float* left   = static_cast<float*>(aligned_alloc(32, rows * inners * sizeof(float)));
+    float* right  = static_cast<float*>(aligned_alloc(32, inners * columns * sizeof(float)));
+    float* result = static_cast<float*>(aligned_alloc(32, rows * columns * sizeof(float)));
 
     // Check for allocation success
     if (left == nullptr || right == nullptr || result == nullptr)
@@ -77,11 +79,20 @@ int main()
     std::clock_t start = std::clock(); // Start time
 
     matmulImplAVX<rows, columns, inners>(left, right, result);
+    matmulImplAVX<rows, columns, inners>(left, right, result);
+    matmulImplAVX<rows, columns, inners>(left, right, result);
+    matmulImplAVX<rows, columns, inners>(left, right, result);
+    matmulImplAVX<rows, columns, inners>(left, right, result);
+    matmulImplAVX<rows, columns, inners>(left, right, result);
+    matmulImplAVX<rows, columns, inners>(left, right, result);
+    matmulImplAVX<rows, columns, inners>(left, right, result);
+    matmulImplAVX<rows, columns, inners>(left, right, result);
+    matmulImplAVX<rows, columns, inners>(left, right, result);
 
     std::clock_t end = std::clock(); // End time
 
     // Calculate the duration
-    double duration = 1000.0 * (end - start) / CLOCKS_PER_SEC; // in milliseconds
+    double duration = 1000.0 * (end - start) / CLOCKS_PER_SEC / 10; // in milliseconds
 
     std::cout << "Time elapsed: " << duration << std::endl;
     std::cout << "Performance: " << (2. * pow(SIZE, 3) / duration / 1000000.) << " GFlops/s"

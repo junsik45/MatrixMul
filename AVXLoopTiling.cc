@@ -4,8 +4,10 @@
 #include <iostream>
 
 #include <immintrin.h> // For AVX intrinsics
+#ifndef SIZE
 #define SIZE 512
-#define ROW_COL_PARALLEL_INNER_TILING_TILE_SIZE 128
+#endif
+#define ROW_COL_PARALLEL_INNER_TILING_TILE_SIZE 32
 // The kernel function
 
 template <int rows, int columns, int inners, int tileSize = ROW_COL_PARALLEL_INNER_TILING_TILE_SIZE>
@@ -38,16 +40,16 @@ inline void matmulImplAVXRowColParallelInnerTiling(const float *left, const floa
                         {
 
                             // Load 8 floats from the right matrix
-                            __m256 vecRight = _mm256_loadu_ps(&right[inner * columns + col]);
+                            __m256 vecRight = _mm256_load_ps(&right[inner * columns + col]);
 
                             // Load the current result vector (8 floats)
-                            __m256 vecResult = _mm256_loadu_ps(&result[row * columns + col]);
+                            __m256 vecResult = _mm256_load_ps(&result[row * columns + col]);
 
                             // Multiply leftVal with vecRight and accumulate into vecResult
                             vecResult = _mm256_add_ps(vecResult, _mm256_mul_ps(vecLeft, vecRight));
 
                             // Store the result back
-                            _mm256_storeu_ps(&result[row * columns + col], vecResult);
+                            _mm256_store_ps(&result[row * columns + col], vecResult);
                         }
                     }
                 }
@@ -63,9 +65,9 @@ int main()
     const int inners = SIZE;  // Set the inner dimension
 
     // Allocate memory for matrices
-    float *left = (float *)std::malloc(rows * inners * sizeof(float));
-    float *right = (float *)std::malloc(inners * columns * sizeof(float));
-    float *result = (float *)std::malloc(rows * columns * sizeof(float));
+    float *left = static_cast<float*>(aligned_alloc(32, rows * inners * sizeof(float)));
+    float *right = static_cast<float*>(aligned_alloc(32, inners * columns * sizeof(float)));
+    float *result = static_cast<float*>(aligned_alloc(32, rows * columns * sizeof(float)));
 
     // Check for allocation success
     if (left == nullptr || right == nullptr || result == nullptr)

@@ -11,7 +11,7 @@ void initialize_matrix(float *matrix, int rows, int cols) {
 
 int main(void) {
 
-  int M=8192, N=8192, K=8192;
+  int M=4096, N=4096, K=4096;
   float *A, *B, *C, *dA, *dB, *dC;
   float alpha= 1.0f, beta= 0.0f;
   cudaEvent_t start, stop;
