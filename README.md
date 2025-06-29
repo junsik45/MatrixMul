@@ -91,7 +91,7 @@ for (int row = 0; row < rows; ++row) {
 
 This code uses OpenMP for parallelizing the loops and performs a matrix multiplication operation.
 
-## Benchmark Result on 11th Gen i3 @ 3.00GHz with 2 physical cores
+## Benchmark Result on 13th Gen i7 @ 2.60GHz with 14 physical cores (6 p cores)
 
 ![roofline analysis](./roofline.png)
 
